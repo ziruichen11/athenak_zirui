@@ -36,7 +36,7 @@ void SourceTerms::NewTimeStep(const DvceArray5D<Real> &w0, const EOS_Data &eos_d
     Real use_e = eos_data.use_e;
     Real gamma = eos_data.gamma;
     Real gm1 = gamma - 1.0;
-    Real heating_rate = hrate;
+    
     Real temp_unit = pmy_pack->punit->temperature_cgs();
     Real n_unit = pmy_pack->punit->density_cgs()/pmy_pack->punit->mu()
                   / pmy_pack->punit->atomic_mass_unit_cgs;
@@ -69,11 +69,11 @@ void SourceTerms::NewTimeStep(const DvceArray5D<Real> &w0, const EOS_Data &eos_d
       }
 
       Real lambda_cooling = ISMCoolFn(temp)/cooling_unit;
-      Real gamma_heating = heating_rate/heating_unit;
+      Real gamma_over_n = 1e-23*(heat_coef0*temp*temp + heat_coef1*temp + heat_coef2) /cooling_unit;
 
       // add a tiny number
-      Real cooling_heating = FLT_MIN + fabs(w0(m,IDN,k,j,i) *
-                             (w0(m,IDN,k,j,i) * lambda_cooling - gamma_heating));
+      Real cooling_heating = FLT_MIN + fabs(w0(m,IDN,k,j,i) * w0(m,IDN,k,j,i) *
+                             (lambda_cooling - gamma_over_n));
 
       min_dt = fmin((eint/cooling_heating), min_dt);
     }, Kokkos::Min<Real>(dtnew));
