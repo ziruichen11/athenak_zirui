@@ -49,7 +49,9 @@ SourceTerms::SourceTerms(std::string block, MeshBlockPack *pp, ParameterInput *p
   // (2) Optically thin (ISM) cooling
   ism_cooling = pin->GetOrAddBoolean(block, "ism_cooling", false);
   if (ism_cooling) {
-    hrate = pin->GetReal(block, "hrate");
+    heat_coef0 = pin->GetReal(block, "heat_coef0");
+    heat_coef1 = pin->GetReal(block, "heat_coef1");
+    heat_coef2 = pin->GetReal(block, "heat_coef2");
   }
 
   // (3) beam source (radiation)
@@ -122,7 +124,7 @@ void SourceTerms::ISMCooling(const DvceArray5D<Real> &w0, const EOS_Data &eos_da
   Real use_e = eos_data.use_e;
   Real gamma = eos_data.gamma;
   Real gm1 = gamma - 1.0;
-  Real heating_rate = hrate;
+  
   Real temp_unit = pmy_pack->punit->temperature_cgs();
   Real n_unit = pmy_pack->punit->density_cgs()/pmy_pack->punit->mu()
                 /pmy_pack->punit->atomic_mass_unit_cgs;
@@ -141,10 +143,10 @@ void SourceTerms::ISMCooling(const DvceArray5D<Real> &w0, const EOS_Data &eos_da
     }
 
     Real lambda_cooling = ISMCoolFn(temp)/cooling_unit;
-    Real gamma_heating = heating_rate/heating_unit;
-
-    u0(m,IEN,k,j,i) -= bdt * w0(m,IDN,k,j,i) *
-                        (w0(m,IDN,k,j,i) * lambda_cooling - gamma_heating);
+    Real gamma_over_n = 1e-23*(heat_coef0*temp*temp + heat_coef1*temp + heat_coef2) /cooling_unit;
+    
+    u0(m,IEN,k,j,i) -= bdt * w0(m,IDN,k,j,i) * w0(m,IDN,k,j,i) *
+                        (lambda_cooling - gamma_over_n);
   });
 
   return;
