@@ -48,7 +48,9 @@ class SourceTerms {
   int const_accel_dir;
 
   // heating rate used with ISM cooling
-  Real hrate;
+  Real heat_coef0;
+  Real heat_coef1;
+  Real heat_coef2;
 
   // cooling rate used with relativistic cooling
   Real crate_rel;
